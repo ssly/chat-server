@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>CHAT</title>
+</head>
+<body>
+    <input type="text" id="username">
+    <input type="text" id="password">
+    <button id="signIn">Sign in</button>
+    <br>
+    <textarea id="chatTextarea" cols="30" rows="10"></textarea>
+    <button id="send">Send</button>
+</body>
+<script>
+var ws = null
+function signIn() {
+    var username = document.getElementById('username').value
+    var password = document.getElementById('password').value
+
+    const xhr =new XMLHttpRequest()
+    xhr.open('POST', '/login')
+    xhr.setRequestHeader('Content-Type', 'application/json')
+    xhr.send(JSON.stringify({
+        username,
+        password
+    }))
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+            const data = JSON.parse(xhr.response)
+
+            // 登录成功，连接websocket
+            ws = new WebSocket('ws://localhost:8090/chat')
+            ws.onopen = function() {
+                console.log('ws onopen')
+                ws.send(JSON.stringify({
+                    type: 'login',
+                    username
+                }))
+            }
+            ws.onmessage = function(ws, event) {
+                console.log(ws, event)
+            }
+        }
+    }
+}
+
+function send() {
+    const message = document.getElementById('chatTextarea').value
+    const name = document.getElementById('username').value
+    ws.send(JSON.stringify({
+        type: 'chat',
+        name,
+        message,
+    }))
+}
+window.onload = function() {
+    // 登录
+    document.getElementById('signIn').addEventListener('click', signIn)
+    document.getElementById('password').addEventListener('keydown', (e) => {
+        if (e.keyCode === 13) {
+            signIn()
+        }
+    })
+
+    document.getElementById('send').addEventListener('click', send)
+    document.getElementById('chatTextarea').addEventListener('keydown', (e) => {
+        if (e.keyCode === 13) {
+            send()
+        }
+    })
+}
+</script>
+</html>
